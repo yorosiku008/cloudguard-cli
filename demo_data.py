@@ -68,6 +68,22 @@ def get_demo_findings() -> List[Dict]:
             'fix': 'IAMコンソールでパスワードポリシーを設定してください',
         },
         {
+            'rule_id': 'EC2_SG_SSH_OPEN',
+            'severity': 'HIGH',
+            'resource': 'sg-0abc1234 (launch-wizard-1)',
+            'title': 'セキュリティグループでSSH(22)が全公開されています',
+            'description': '0.0.0.0/0からSSHポート(22)へのアクセスが許可されています',
+            'fix': 'SSHアクセスを必要なIPアドレスのみに制限してください',
+        },
+        {
+            'rule_id': 'CLOUDTRAIL_NOT_ENABLED',
+            'severity': 'HIGH',
+            'resource': 'account',
+            'title': 'CloudTrailが有効化されていません',
+            'description': 'CloudTrailがないとAPI操作の監査証跡が残りません',
+            'fix': 'CloudTrailコンソールでマルチリージョントレイルを作成してください',
+        },
+        {
             'rule_id': 'S3_LOGGING_DISABLED',
             'severity': 'LOW',
             'resource': 'mycompany-static',
