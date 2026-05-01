@@ -16,3 +16,5 @@ jobs:
           cache: 'pip'
       - run: pip install -r requirements.txt
       - run: pytest tests/ -v --tb=short
+      - name: Smoke test (demo mode, no AWS required)
+        run: python main.py --demo --severity CRITICAL HIGH
