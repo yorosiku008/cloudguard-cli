@@ -16,7 +16,9 @@ def scan_s3(profile: str) -> List[Dict]:
     for bucket in buckets:
         name = bucket['Name']
         findings.extend(_check_s3_acl(client, name))
+        findings.extend(_check_s3_public_block(client, name))
         findings.extend(_check_s3_versioning(client, name))
+        findings.extend(_check_s3_encryption(client, name))
         findings.extend(_check_s3_logging(client, name))
 
     return findings
@@ -38,6 +40,29 @@ def _check_s3_acl(client, bucket_name: str) -> List[Dict]:
     return []
 
 
+def _check_s3_public_block(client, bucket_name: str) -> List[Dict]:
+    try:
+        resp = client.get_public_access_block(Bucket=bucket_name)
+        cfg = resp.get('PublicAccessBlockConfiguration', {})
+        if all([
+            cfg.get('BlockPublicAcls'),
+            cfg.get('IgnorePublicAcls'),
+            cfg.get('BlockPublicPolicy'),
+            cfg.get('RestrictPublicBuckets'),
+        ]):
+            return []
+    except Exception:
+        pass
+    return [_finding(
+        rule_id='S3_PUBLIC_BLOCK_DISABLED',
+        severity='HIGH',
+        resource=bucket_name,
+        title='S3パブリックアクセスブロックが無効です',
+        description='パブリックアクセスブロックが無効だと意図しない公開リスクがあります',
+        fix='S3コンソールで「パブリックアクセスをすべてブロック」を有効化してください',
+    )]
+
+
 def _check_s3_versioning(client, bucket_name: str) -> List[Dict]:
     resp = client.get_bucket_versioning(Bucket=bucket_name)
     if resp.get('Status') != 'Enabled':
@@ -50,6 +75,21 @@ def _check_s3_versioning(client, bucket_name: str) -> List[Dict]:
             fix='S3コンソールからバージョニングを有効化してください',
         )]
     return []
+
+
+def _check_s3_encryption(client, bucket_name: str) -> List[Dict]:
+    try:
+        client.get_bucket_encryption(Bucket=bucket_name)
+        return []
+    except Exception:
+        return [_finding(
+            rule_id='S3_ENCRYPTION_DISABLED',
+            severity='MEDIUM',
+            resource=bucket_name,
+            title='S3バケットのデフォルト暗号化が無効です',
+            description='暗号化が無効だとデータ漏洩時のリスクが高まります',
+            fix='バケットのデフォルト暗号化（SSE-S3またはSSE-KMS）を有効化してください',
+        )]
 
 
 def _check_s3_logging(client, bucket_name: str) -> List[Dict]:
@@ -72,6 +112,7 @@ def scan_iam(profile: str) -> List[Dict]:
     findings = []
 
     summary = client.get_account_summary()['SummaryMap']
+
     if summary.get('AccountAccessKeysPresent', 0) > 0:
         findings.append(_finding(
             rule_id='IAM_ROOT_ACCESS_KEY',
@@ -80,6 +121,28 @@ def scan_iam(profile: str) -> List[Dict]:
             title='rootアカウントにアクセスキーが存在します',
             description='rootアクセスキーは漏洩時のリスクが極めて高いです',
             fix='rootアクセスキーをすぐに削除してください',
+        ))
+
+    if summary.get('AccountMFAEnabled', 0) == 0:
+        findings.append(_finding(
+            rule_id='IAM_ROOT_MFA_DISABLED',
+            severity='CRITICAL',
+            resource='root',
+            title='rootアカウントのMFAが無効です',
+            description='MFAなしのrootアカウントはパスワード漏洩で即座に乗っ取られます',
+            fix='AWSコンソールでrootアカウントのMFAデバイスを登録してください',
+        ))
+
+    try:
+        client.get_account_password_policy()
+    except Exception:
+        findings.append(_finding(
+            rule_id='IAM_PASSWORD_POLICY_MISSING',
+            severity='MEDIUM',
+            resource='account',
+            title='IAMパスワードポリシーが未設定です',
+            description='パスワードポリシーがないと弱いパスワードが許可されます',
+            fix='IAMコンソールでパスワードポリシー（最小8文字・大文字小文字数字記号）を設定してください',
         ))
 
     return findings
