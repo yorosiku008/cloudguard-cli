@@ -21,7 +21,7 @@ def count_by_severity(findings: List[Dict]) -> Dict[str, int]:
     return counts
 
 
-def build_md_report(findings: List[Dict]) -> str:
+def build_md_report(findings: List[Dict], ai_suggestions: List[str] = None) -> str:
     counts = count_by_severity(findings)
     lines = [
         '# CloudGuard JP — セキュリティスキャンレポート',
@@ -51,7 +51,12 @@ def build_md_report(findings: List[Dict]) -> str:
             '',
         ]
 
-    lines += ['---', f'*FinOps JP — CloudGuard JP v0.1.0*']
+    if ai_suggestions:
+        lines += ['', '## Claude AI 修正提案', '']
+        for suggestion in ai_suggestions:
+            lines.append(f'- {suggestion}')
+
+    lines += ['', '---', '*CloudGuard JP v0.1.0*']
     return '\n'.join(lines)
 
 
@@ -60,7 +65,7 @@ def save_md_report(content: str, path: str) -> None:
         f.write(content)
 
 
-def print_terminal_report(findings: List[Dict]) -> None:
+def print_terminal_report(findings: List[Dict], ai_suggestions: List[str] = None) -> None:
     console = Console(legacy_windows=False)
     counts = count_by_severity(findings)
 
@@ -98,3 +103,9 @@ def print_terminal_report(findings: List[Dict]) -> None:
         )
 
     console.print(table)
+
+    if ai_suggestions:
+        console.print('[bold bright_cyan]Claude AI 修正提案:[/bold bright_cyan]')
+        for suggestion in ai_suggestions:
+            console.print(f'  {suggestion}')
+        console.print()

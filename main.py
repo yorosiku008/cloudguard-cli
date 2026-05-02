@@ -19,11 +19,12 @@ def parse_args(argv=None):
                         help='表示する重要度フィルター（例: --severity CRITICAL HIGH）')
     parser.add_argument('--output-md', action='store_true', help='MDレポートを出力')
     parser.add_argument('--demo', action='store_true', help='デモデータで動作確認（AWS不要）')
+    parser.add_argument('--ai', action='store_true', help='Claude AIによる修正提案を生成（ANTHROPIC_API_KEY必要）')
     return parser.parse_args(argv)
 
 
 def run(profile: str, services: list, output_md: bool, demo: bool = False,
-        severity: list = None) -> None:
+        severity: list = None, ai: bool = False) -> None:
     if demo:
         findings = get_demo_findings()
     else:
@@ -40,10 +41,15 @@ def run(profile: str, services: list, output_md: bool, demo: bool = False,
     if severity:
         findings = [f for f in findings if f['severity'] in severity]
 
-    print_terminal_report(findings)
+    ai_suggestions = []
+    if ai:
+        from analyzer import analyze_findings
+        ai_suggestions = analyze_findings(findings)
+
+    print_terminal_report(findings, ai_suggestions=ai_suggestions)
 
     if output_md:
-        content = build_md_report(findings)
+        content = build_md_report(findings, ai_suggestions=ai_suggestions)
         filename = f"cloudguard_report_{datetime.now().strftime('%Y%m%d')}.md"
         output_path = str(Path('C:/claude_c') / filename)
         save_md_report(content, output_path)
@@ -53,4 +59,4 @@ def run(profile: str, services: list, output_md: bool, demo: bool = False,
 if __name__ == '__main__':
     args = parse_args()
     run(profile=args.profile, services=args.services,
-        output_md=args.output_md, demo=args.demo, severity=args.severity)
+        output_md=args.output_md, demo=args.demo, severity=args.severity, ai=args.ai)
