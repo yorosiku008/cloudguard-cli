@@ -3,7 +3,7 @@
 AWSセキュリティスキャンCLI — S3/IAM/EC2/CloudTrailの設定問題を自動検出します。
 
 [![Tests](https://github.com/yorosiku008/cloudguard-cli/actions/workflows/test.yml/badge.svg)](https://github.com/yorosiku008/cloudguard-cli/actions)
-[![Beta](https://img.shields.io/badge/β版-募集中-brightgreen)](mailto:yorosiku008@gmail.com)
+[![Beta](https://img.shields.io/badge/β版-募集中-brightgreen)](https://github.com/yorosiku008/cloudguard-cli/issues/new?template=beta_application.md&title=%5Bβ版申込%5D)
 
 ## インストール
 
