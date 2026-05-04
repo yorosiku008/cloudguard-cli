@@ -1,6 +1,14 @@
 import argparse
+import sys
+import io
 from datetime import datetime
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+elif sys.stdout.encoding and sys.stdout.encoding.lower() not in ('utf-8', 'utf_8'):
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 
 from scanner import scan_s3, scan_iam, scan_ec2, scan_cloudtrail
 from reporter import build_md_report, save_md_report, print_terminal_report
